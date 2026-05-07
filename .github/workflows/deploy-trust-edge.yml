@@ -43,11 +43,7 @@ jobs:
           root="${root%/}"
 
           encode_path() {
-            python3 - "$1" <<'PY'
-import sys
-from urllib.parse import quote
-print("/".join(quote(part) for part in sys.argv[1].split("/")))
-PY
+            python3 -c 'import sys; from urllib.parse import quote; print("/".join(quote(part) for part in sys.argv[1].split("/")))' "$1"
           }
 
           find "$payload" -type f -print0 | while IFS= read -r -d '' file; do
