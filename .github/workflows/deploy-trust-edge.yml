@@ -1,0 +1,80 @@
+name: Deploy to Trust Edge
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: trust-edge-production
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    name: Upload public_html payload
+    runs-on: ubuntu-latest
+    if: ${{ vars.TRUST_EDGE_DEPLOY_ENABLED == 'true' }}
+    env:
+      TRUST_EDGE_FTP_SERVER: ${{ secrets.TRUST_EDGE_FTP_SERVER }}
+      TRUST_EDGE_FTP_USERNAME: ${{ secrets.TRUST_EDGE_FTP_USERNAME }}
+      TRUST_EDGE_FTP_PASSWORD: ${{ secrets.TRUST_EDGE_FTP_PASSWORD }}
+      TRUST_EDGE_REMOTE_ROOT: ${{ vars.TRUST_EDGE_REMOTE_ROOT }}
+      TRUST_EDGE_SOURCE_DIR: ${{ vars.TRUST_EDGE_SOURCE_DIR }}
+      TRUST_EDGE_VERIFY_URLS: ${{ vars.TRUST_EDGE_VERIFY_URLS }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Validate deploy configuration
+        run: |
+          test -n "$TRUST_EDGE_FTP_SERVER"
+          test -n "$TRUST_EDGE_FTP_USERNAME"
+          test -n "$TRUST_EDGE_FTP_PASSWORD"
+
+      - name: Prepare deploy payload
+        run: scripts/prepare-trust-edge-deploy.sh
+
+      - name: Upload deploy payload
+        run: |
+          payload=".trust-edge-deploy"
+          root="${TRUST_EDGE_REMOTE_ROOT#/}"
+          root="${root%/}"
+
+          encode_path() {
+            python3 - "$1" <<'PY'
+import sys
+from urllib.parse import quote
+print("/".join(quote(part) for part in sys.argv[1].split("/")))
+PY
+          }
+
+          find "$payload" -type f -print0 | while IFS= read -r -d '' file; do
+            name="${file#$payload/}"
+            if [ -n "$root" ]; then
+              remote_path="$root/$name"
+            else
+              remote_path="$name"
+            fi
+            encoded_path="$(encode_path "$remote_path")"
+            echo "Uploading $name"
+            curl --fail --silent --show-error \
+              --connect-timeout 20 \
+              --max-time 120 \
+              --retry 3 \
+              --retry-delay 2 \
+              --retry-all-errors \
+              --ftp-create-dirs \
+              --user "$TRUST_EDGE_FTP_USERNAME:$TRUST_EDGE_FTP_PASSWORD" \
+              --upload-file "$file" \
+              "ftp://$TRUST_EDGE_FTP_SERVER/$encoded_path"
+          done
+
+      - name: Verify live URLs
+        if: ${{ vars.TRUST_EDGE_VERIFY_URLS != '' }}
+        run: |
+          printf '%s\n' "$TRUST_EDGE_VERIFY_URLS" | while IFS= read -r url; do
+            [ -n "$url" ] || continue
+            curl -fsSIL --retry 3 --retry-delay 2 --max-time 20 "$url"
+          done
