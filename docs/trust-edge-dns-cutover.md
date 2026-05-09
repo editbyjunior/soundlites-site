@@ -12,6 +12,8 @@ Trust Edge IDs:
 ```text
 website_id=cae47aa8-c7c1-4897-a503-dfe3967b5609
 domain_id=83e55a4c-a4da-4f54-a2f9-992b435d37f9
+staging_website_id=0774c59e-a135-4b1c-a607-ac6368fb7d9c
+staging_domain_id=4c9e10ee-db1c-4581-b5b8-671dbf4f76a1
 ```
 
 ## Current Live Records
@@ -20,6 +22,7 @@ These records are active in the Trust Edge DNS zone as of 2026-05-08:
 
 ```text
 @                     A      66.23.201.82
+staging              A      66.23.201.82
 www                   CNAME  soundlites.io.
 @                     MX     10 fwd1.porkbun.com.
 @                     MX     20 fwd2.porkbun.com.
@@ -107,6 +110,14 @@ home_dir=public_html
 1Password item=Trust Edge FTP - soundlites.io - soundlites-site
 ```
 
+Trust Edge staging FTP account:
+
+```text
+username=deploy-soundlites-site-staging@staging.soundlites.io
+home_dir=public_html
+1Password item=Trust Edge FTP - staging.soundlites.io - soundlites-site
+```
+
 Provisioning command used:
 
 ```sh
@@ -153,4 +164,33 @@ issuer=C=US, O=Let's Encrypt, CN=R12
 subject=CN=soundlites.io
 notBefore=May  9 03:22:11 2026 GMT
 notAfter=Aug  7 03:22:10 2026 GMT
+```
+
+## Staging Verification
+
+GitHub Actions staging deploy run `25591960580` completed successfully against
+commit `67741b8f5c0185bbb5dd8b5f220edce920599500`.
+
+Verification evidence from that run:
+
+```text
+http://staging.soundlites.io/   200
+https://staging.soundlites.io/  200
+```
+
+Local forced-IP checks also return the baseline page from Trust Edge:
+
+```sh
+curl --resolve staging.soundlites.io:80:66.23.201.82 http://staging.soundlites.io/
+curl --resolve staging.soundlites.io:443:66.23.201.82 https://staging.soundlites.io/
+```
+
+Certificate readback against `66.23.201.82:443` with SNI
+`staging.soundlites.io`:
+
+```text
+issuer=C=US, O=Let's Encrypt, CN=R13
+subject=CN=staging.soundlites.io
+notBefore=May  9 03:40:07 2026 GMT
+notAfter=Aug  7 03:40:06 2026 GMT
 ```

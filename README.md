@@ -6,8 +6,7 @@ Soundlites website workspace for `soundlites.io`.
 
 - Live domain: https://soundlites.io
 - GitHub repo: https://github.com/editbyjunior/soundlites-site
-- Staging target: `https://staging.soundlites.io` after a dedicated Trust Edge
-  site, DNS record, and scoped deploy credentials are provisioned
+- Staging target: https://staging.soundlites.io
 
 ## Trust Edge status
 
@@ -23,12 +22,12 @@ static Trust Edge payload is a temporary `index.html` holding page.
 
 ## Staging
 
-Recommended setup:
+Current setup:
 
-1. Create a separate Trust Edge website for `staging.soundlites.io`.
-2. Add DNS for `staging.soundlites.io` to that website.
-3. Provision a separate FTP user and GitHub `staging` environment using the same
-   secret and variable names as production.
+1. `staging.soundlites.io` has a separate Trust Edge website.
+2. DNS points `staging.soundlites.io` to Trust Edge.
+3. GitHub has `production` and `staging` environments with separate deploy
+   credentials.
 4. Use the manual workflow `target` input to deploy either `production` or
    `staging`.
 
