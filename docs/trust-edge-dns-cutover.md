@@ -2,19 +2,25 @@
 
 Live domain: `soundlites.io`
 
-Current authoritative DNS provider: Porkbun.
+Current authoritative DNS provider: Trust Edge.
 
-Do not point `soundlites.io` nameservers to Trust Edge until `ns1.trustedge.gt`
-and `ns2.trustedge.gt` answer authoritatively for the zone.
+Trust Edge authoritative zone is now created and answering on `ns1.trustedge.gt`
+and `ns2.trustedge.gt`.
 
-## Current Live Records To Mirror
-
-Mirror these records into the Trust Edge DNS zone before nameserver cutover.
+Trust Edge IDs:
 
 ```text
-@                     A      44.227.65.245
-@                     A      44.227.76.166
-www                   CNAME  pixie.porkbun.com.
+website_id=cae47aa8-c7c1-4897-a503-dfe3967b5609
+domain_id=83e55a4c-a4da-4f54-a2f9-992b435d37f9
+```
+
+## Current Live Records
+
+These records are active in the Trust Edge DNS zone as of 2026-05-08:
+
+```text
+@                     A      66.23.201.82
+www                   CNAME  soundlites.io.
 @                     MX     10 fwd1.porkbun.com.
 @                     MX     20 fwd2.porkbun.com.
 @                     TXT    google-site-verification=eXreDjIpBpYSaZdyupnnqOgrJL0PcmS5zkXmQPASllQ
@@ -25,7 +31,7 @@ gws._domainkey        TXT    v=DKIM1; k=rsa; p=MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AM
 
 ## Required Trust Edge Checks
 
-Run these before changing Porkbun nameservers:
+These passed directly against both Trust Edge nameservers on 2026-05-08:
 
 ```sh
 for ns in ns1.trustedge.gt ns2.trustedge.gt; do
@@ -42,6 +48,28 @@ done
 
 Expected: all queries return real records, not `REFUSED`.
 
+Current result: passing. Public resolvers `1.1.1.1` and `8.8.8.8` also return
+apex `A 66.23.201.82` and `www CNAME soundlites.io.`.
+
+## Porkbun Nameserver Cutover
+
+Porkbun API accepted the nameserver update on 2026-05-06:
+
+```text
+ns1.trustedge.gt
+ns2.trustedge.gt
+```
+
+Porkbun API readback returned the Trust Edge nameservers, and public resolver
+checks now return Trust Edge:
+
+```sh
+dig NS soundlites.io +trace
+dig NS soundlites.io +short
+dig NS soundlites.io @8.8.8.8 +short
+dig NS soundlites.io @1.1.1.1 +short
+```
+
 ## GitHub Deploy State
 
 The repo contains the standard Trust Edge workflow:
@@ -54,16 +82,16 @@ scripts/prepare-trust-edge-deploy.sh
 GitHub variables:
 
 ```text
-TRUST_EDGE_DEPLOY_ENABLED=false
+TRUST_EDGE_DEPLOY_ENABLED=true
 TRUST_EDGE_REMOTE_ROOT=/
 TRUST_EDGE_VERIFY_URLS=http://soundlites.io/
 https://soundlites.io/
 ```
 
-Keep `TRUST_EDGE_DEPLOY_ENABLED=false` until scoped FTP credentials exist and
-the first manual deploy is ready to test.
+Deploy is enabled for manual `workflow_dispatch` runs after scoped FTP
+credential provisioning.
 
-Required GitHub secrets before deploy:
+GitHub secrets provisioned on 2026-05-06:
 
 ```text
 TRUST_EDGE_FTP_SERVER
@@ -71,18 +99,25 @@ TRUST_EDGE_FTP_USERNAME
 TRUST_EDGE_FTP_PASSWORD
 ```
 
-Use the Trust Edge baseline script after the `soundlites.io` website ID is
-known:
+Trust Edge FTP account:
+
+```text
+username=deploy-soundlites-site@soundlites.io
+home_dir=public_html
+1Password item=Trust Edge FTP - soundlites.io - soundlites-site
+```
+
+Provisioning command used:
 
 ```sh
 /Users/elderjerezjr/Dev/trustedge-baselines/scripts/provision-trust-edge-ftp.sh \
   --repo editbyjunior/soundlites-site \
   --domain soundlites.io \
-  --vault "Private" \
+  --vault "Personal" \
   --org-id "$ENHANCE_ORG_ID" \
-  --website-id "$SOUNDLITES_TRUST_EDGE_WEBSITE_ID" \
+  --website-id "cae47aa8-c7c1-4897-a503-dfe3967b5609" \
   --api-base "$ENHANCE_API_BASE" \
-  --api-token-op-ref "op://Private/Trust Edge API - jr@progressiveone.com/ENHANCE_API_TOKEN" \
+  --api-token "$ENHANCE_API_TOKEN" \
   --ftp-server "66.23.201.82" \
   --home-dir public_html \
   --remote-root / \
@@ -92,3 +127,30 @@ known:
 
 Only add `--run-deploy` after the target website object, FTP scope, and deploy
 payload have been verified.
+
+## Final Verification
+
+GitHub Actions deploy run `25591587986` completed successfully against commit
+`3c431899703ab1e0e86dc43b3b8035d0d4b8dcfc`.
+
+Verification evidence from that run:
+
+```text
+http://soundlites.io/   HTTP/1.1 200 OK, nginx, Content-Length 981
+https://soundlites.io/  HTTP/2 200, nginx, Content-Length 981
+```
+
+Local forced-IP check also returns the baseline page from Trust Edge:
+
+```sh
+curl --resolve soundlites.io:80:66.23.201.82 http://soundlites.io/
+```
+
+Certificate readback against `66.23.201.82:443` with SNI `soundlites.io`:
+
+```text
+issuer=C=US, O=Let's Encrypt, CN=R12
+subject=CN=soundlites.io
+notBefore=May  9 03:22:11 2026 GMT
+notAfter=Aug  7 03:22:10 2026 GMT
+```
