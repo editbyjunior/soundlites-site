@@ -2,18 +2,28 @@ name: Deploy to Trust Edge
 
 on:
   workflow_dispatch:
+    inputs:
+      target:
+        description: Trust Edge target environment
+        required: true
+        default: production
+        type: choice
+        options:
+          - production
+          - staging
 
 permissions:
   contents: read
 
 concurrency:
-  group: trust-edge-production
+  group: trust-edge-${{ inputs.target }}
   cancel-in-progress: true
 
 jobs:
   deploy:
     name: Upload public_html payload
     runs-on: ubuntu-latest
+    environment: ${{ inputs.target }}
     if: ${{ vars.TRUST_EDGE_DEPLOY_ENABLED == 'true' }}
     env:
       TRUST_EDGE_FTP_SERVER: ${{ secrets.TRUST_EDGE_FTP_SERVER }}

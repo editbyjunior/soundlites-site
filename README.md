@@ -27,9 +27,9 @@ Recommended setup:
 
 1. Create a separate Trust Edge website for `staging.soundlites.io`.
 2. Add DNS for `staging.soundlites.io` to that website.
-3. Provision a separate FTP user and GitHub environment or workflow variables for
-   staging.
-4. Keep production deploys on `main`; use a `staging` branch or manual workflow
-   input for staging deploys.
+3. Provision a separate FTP user and GitHub `staging` environment using the same
+   secret and variable names as production.
+4. Use the manual workflow `target` input to deploy either `production` or
+   `staging`.
 
 Do not reuse the production FTP account for staging.
