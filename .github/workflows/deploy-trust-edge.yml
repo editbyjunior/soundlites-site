@@ -82,5 +82,12 @@ jobs:
         run: |
           printf '%s\n' "$TRUST_EDGE_VERIFY_URLS" | while IFS= read -r url; do
             [ -n "$url" ] || continue
-            curl -fsSIL --retry 3 --retry-delay 2 --max-time 20 "$url"
+            curl -fsSL \
+              --user-agent "Mozilla/5.0 TrustEdgeDeployVerifier/1.0" \
+              --output /dev/null \
+              --write-out "%{url_effective} %{http_code}\n" \
+              --retry 3 \
+              --retry-delay 2 \
+              --max-time 20 \
+              "$url"
           done
