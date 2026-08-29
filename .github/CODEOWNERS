@@ -1,0 +1,4 @@
+# Workflow and deploy ownership only; repository rules control review requirements.
+* @editbyjunior
+/.github/workflows/ @editbyjunior
+/scripts/prepare-trust-edge-deploy.sh @editbyjunior

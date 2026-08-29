@@ -31,4 +31,10 @@ Current setup:
 4. Use the manual workflow `target` input to deploy either `production` or
    `staging`.
 
+Run either target from `main` and provide the full 40-character SHA for the
+exact `main` commit being deployed. The workflow confirms that SHA before
+checkout and queues overlapping FTP uploads for the selected target instead of
+cancelling an upload in progress. Target-based environment selection and its
+separate credentials remain unchanged.
+
 Do not reuse the production FTP account for staging.
