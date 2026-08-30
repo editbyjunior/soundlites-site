@@ -11,13 +11,17 @@ on:
         options:
           - production
           - staging
+      release_sha:
+        description: Full commit SHA from main to deploy
+        required: true
+        type: string
 
 permissions:
   contents: read
 
 concurrency:
   group: trust-edge-${{ inputs.target }}
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   deploy:
@@ -26,6 +30,7 @@ jobs:
     environment: ${{ inputs.target }}
     if: ${{ vars.TRUST_EDGE_DEPLOY_ENABLED == 'true' }}
     env:
+      EXPECTED_RELEASE_SHA: ${{ inputs.release_sha }}
       TRUST_EDGE_FTP_SERVER: ${{ secrets.TRUST_EDGE_FTP_SERVER }}
       TRUST_EDGE_FTP_USERNAME: ${{ secrets.TRUST_EDGE_FTP_USERNAME }}
       TRUST_EDGE_FTP_PASSWORD: ${{ secrets.TRUST_EDGE_FTP_PASSWORD }}
@@ -34,8 +39,16 @@ jobs:
       TRUST_EDGE_VERIFY_URLS: ${{ vars.TRUST_EDGE_VERIFY_URLS }}
 
     steps:
+      - name: Confirm release from main
+        run: |
+          test "$GITHUB_REF_NAME" = "main"
+          test "${#EXPECTED_RELEASE_SHA}" -eq 40
+          test "$GITHUB_SHA" = "$EXPECTED_RELEASE_SHA"
+
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ inputs.release_sha }}
 
       - name: Validate deploy configuration
         run: |
