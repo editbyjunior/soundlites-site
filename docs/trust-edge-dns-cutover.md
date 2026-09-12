@@ -7,14 +7,8 @@ Current authoritative DNS provider: Trust Edge.
 Trust Edge authoritative zone is now created and answering on `ns1.trustedge.gt`
 and `ns2.trustedge.gt`.
 
-Trust Edge IDs:
-
-```text
-website_id=cae47aa8-c7c1-4897-a503-dfe3967b5609
-domain_id=83e55a4c-a4da-4f54-a2f9-992b435d37f9
-staging_website_id=0774c59e-a135-4b1c-a607-ac6368fb7d9c
-staging_domain_id=4c9e10ee-db1c-4581-b5b8-671dbf4f76a1
-```
+This document records the May 2026 cutover. Recheck DNS, HTTPS, and
+deployment settings before using it for a new release.
 
 ## Current Live Records
 
@@ -94,50 +88,15 @@ https://soundlites.io/
 Deploy is enabled for manual `workflow_dispatch` runs after scoped FTP
 credential provisioning.
 
-GitHub secrets provisioned on 2026-05-06:
+## Private operator setup
 
-```text
-TRUST_EDGE_FTP_SERVER
-TRUST_EDGE_FTP_USERNAME
-TRUST_EDGE_FTP_PASSWORD
-```
+Keep hosting object IDs, deployment account details, credential-store references,
+and provisioning commands in the private operator records. Retrieve them through
+the approved credential store when needed; do not copy them into this public repo.
 
-Trust Edge FTP account:
-
-```text
-username=deploy-soundlites-site@soundlites.io
-home_dir=public_html
-1Password item=Trust Edge FTP - soundlites.io - soundlites-site
-```
-
-Trust Edge staging FTP account:
-
-```text
-username=deploy-soundlites-site-staging@staging.soundlites.io
-home_dir=public_html
-1Password item=Trust Edge FTP - staging.soundlites.io - soundlites-site
-```
-
-Provisioning command used:
-
-```sh
-/Users/elderjerezjr/Dev/trustedge-baselines/scripts/provision-trust-edge-ftp.sh \
-  --repo editbyjunior/soundlites-site \
-  --domain soundlites.io \
-  --vault "Personal" \
-  --org-id "$ENHANCE_ORG_ID" \
-  --website-id "cae47aa8-c7c1-4897-a503-dfe3967b5609" \
-  --api-base "$ENHANCE_API_BASE" \
-  --api-token "$ENHANCE_API_TOKEN" \
-  --ftp-server "66.23.201.82" \
-  --home-dir public_html \
-  --remote-root / \
-  --verify-url http://soundlites.io/ \
-  --verify-url https://soundlites.io/
-```
-
-Only add `--run-deploy` after the target website object, FTP scope, and deploy
-payload have been verified.
+Production and staging use separate deployment accounts and GitHub environments.
+Confirm the target, account scope, and payload before a release. Use a verified
+encrypted transfer connection and stop if certificate verification fails.
 
 ## Final Verification
 
