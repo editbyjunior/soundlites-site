@@ -84,6 +84,7 @@ jobs:
               --retry 3 \
               --retry-delay 2 \
               --retry-all-errors \
+              --ssl-reqd \
               --ftp-create-dirs \
               --user "$TRUST_EDGE_FTP_USERNAME:$TRUST_EDGE_FTP_PASSWORD" \
               --upload-file "$file" \
