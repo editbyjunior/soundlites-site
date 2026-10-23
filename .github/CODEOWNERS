@@ -2,3 +2,4 @@
 * @editbyjunior
 /.github/workflows/ @editbyjunior
 /scripts/prepare-trust-edge-deploy.sh @editbyjunior
+/scripts/upload-trust-edge-sftp.sh @editbyjunior
