@@ -15,6 +15,14 @@ on:
         description: Full commit SHA from main to deploy
         required: true
         type: string
+      transport:
+        description: Upload transport (sftp uses a pinned SSH host key; ftps is the previous path, kept for rollback)
+        required: true
+        default: sftp
+        type: choice
+        options:
+          - sftp
+          - ftps
 
 permissions:
   contents: read
@@ -31,10 +39,17 @@ jobs:
     if: ${{ vars.TRUST_EDGE_DEPLOY_ENABLED == 'true' }}
     env:
       EXPECTED_RELEASE_SHA: ${{ inputs.release_sha }}
+      TRANSPORT: ${{ inputs.transport }}
       TRUST_EDGE_FTP_SERVER: ${{ secrets.TRUST_EDGE_FTP_SERVER }}
       TRUST_EDGE_FTP_USERNAME: ${{ secrets.TRUST_EDGE_FTP_USERNAME }}
       TRUST_EDGE_FTP_PASSWORD: ${{ secrets.TRUST_EDGE_FTP_PASSWORD }}
       TRUST_EDGE_REMOTE_ROOT: ${{ vars.TRUST_EDGE_REMOTE_ROOT }}
+      TRUST_EDGE_SSH_HOST: ${{ secrets.TRUST_EDGE_SSH_HOST }}
+      TRUST_EDGE_SSH_USERNAME: ${{ secrets.TRUST_EDGE_SSH_USERNAME }}
+      TRUST_EDGE_SSH_PRIVATE_KEY: ${{ secrets.TRUST_EDGE_SSH_PRIVATE_KEY }}
+      TRUST_EDGE_SSH_KNOWN_HOSTS: ${{ secrets.TRUST_EDGE_SSH_KNOWN_HOSTS }}
+      TRUST_EDGE_SSH_PORT: ${{ vars.TRUST_EDGE_SSH_PORT }}
+      TRUST_EDGE_SSH_REMOTE_ROOT: ${{ vars.TRUST_EDGE_SSH_REMOTE_ROOT }}
       TRUST_EDGE_SOURCE_DIR: ${{ vars.TRUST_EDGE_SOURCE_DIR }}
       TRUST_EDGE_VERIFY_URLS: ${{ vars.TRUST_EDGE_VERIFY_URLS }}
 
@@ -52,14 +67,33 @@ jobs:
 
       - name: Validate deploy configuration
         run: |
-          test -n "$TRUST_EDGE_FTP_SERVER"
-          test -n "$TRUST_EDGE_FTP_USERNAME"
-          test -n "$TRUST_EDGE_FTP_PASSWORD"
+          case "$TRANSPORT" in
+            sftp)
+              test -n "$TRUST_EDGE_SSH_HOST"
+              test -n "$TRUST_EDGE_SSH_USERNAME"
+              test -n "$TRUST_EDGE_SSH_PRIVATE_KEY"
+              test -n "$TRUST_EDGE_SSH_KNOWN_HOSTS"
+              ;;
+            ftps)
+              test -n "$TRUST_EDGE_FTP_SERVER"
+              test -n "$TRUST_EDGE_FTP_USERNAME"
+              test -n "$TRUST_EDGE_FTP_PASSWORD"
+              ;;
+            *)
+              echo "Unknown transport: $TRANSPORT" >&2
+              exit 1
+              ;;
+          esac
 
       - name: Prepare deploy payload
         run: scripts/prepare-trust-edge-deploy.sh
 
-      - name: Upload deploy payload
+      - name: Upload deploy payload over SFTP
+        if: ${{ inputs.transport == 'sftp' }}
+        run: scripts/upload-trust-edge-sftp.sh .trust-edge-deploy
+
+      - name: Upload deploy payload over FTPS
+        if: ${{ inputs.transport == 'ftps' }}
         run: |
           payload=".trust-edge-deploy"
           root="${TRUST_EDGE_REMOTE_ROOT#/}"

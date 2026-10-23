@@ -38,3 +38,38 @@ cancelling an upload in progress. Target-based environment selection and its
 separate credentials remain unchanged.
 
 Do not reuse the production FTP account for staging.
+
+## Deploy transport
+
+The workflow's `transport` input picks how the payload reaches Trust Edge:
+
+- `sftp` (default): uploads over SSH with `scripts/upload-trust-edge-sftp.sh`.
+  The server is checked only against a pinned host key with strict checking;
+  the workflow never runs `ssh-keyscan` or trusts a key on first use.
+- `ftps`: the previous FTP upload with verified TLS (`--ssl-reqd`). It stays
+  for rollback, but fails until the FTP service presents a publicly trusted
+  certificate for the hostname used (EDI-49).
+
+SFTP needs these secrets in each GitHub environment (`production` and
+`staging`), each with that website's own values:
+
+| Secret | Value |
+| --- | --- |
+| `TRUST_EDGE_SSH_HOST` | Server address the Enhance panel shows for SSH |
+| `TRUST_EDGE_SSH_USERNAME` | The website's SSH username from the panel |
+| `TRUST_EDGE_SSH_PRIVATE_KEY` | Private half of a deploy-only key whose public half is added under the website's Developer tools |
+| `TRUST_EDGE_SSH_KNOWN_HOSTS` | One known_hosts line for the server, pinned out of band |
+
+Optional environment variables: `TRUST_EDGE_SSH_PORT` (default `22`) and
+`TRUST_EDGE_SSH_REMOTE_ROOT` (default `public_html`, relative to the SSH home
+directory).
+
+Pinning the host key: from a trusted machine, connect once with
+`ssh -o StrictHostKeyChecking=ask <user>@<host>`, compare the fingerprint
+with a second network or an independent source, then copy the server's line
+from `~/.ssh/known_hosts` (use `ssh-keygen -F <host>`; the host must match
+`TRUST_EDGE_SSH_HOST`, written `[host]:port` for a non-22 port). Each run logs
+the pinned fingerprint so it can be compared with the recorded value.
+
+Keep the FTP secrets until an SFTP deploy has passed on staging and then
+production.
