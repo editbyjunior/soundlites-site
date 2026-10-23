@@ -150,4 +150,3 @@ jobs:
               --max-time 20 \
               "$url"
           done
-
