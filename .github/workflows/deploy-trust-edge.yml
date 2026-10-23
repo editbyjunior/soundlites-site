@@ -40,14 +40,7 @@ jobs:
     env:
       EXPECTED_RELEASE_SHA: ${{ inputs.release_sha }}
       TRANSPORT: ${{ inputs.transport }}
-      TRUST_EDGE_FTP_SERVER: ${{ secrets.TRUST_EDGE_FTP_SERVER }}
-      TRUST_EDGE_FTP_USERNAME: ${{ secrets.TRUST_EDGE_FTP_USERNAME }}
-      TRUST_EDGE_FTP_PASSWORD: ${{ secrets.TRUST_EDGE_FTP_PASSWORD }}
       TRUST_EDGE_REMOTE_ROOT: ${{ vars.TRUST_EDGE_REMOTE_ROOT }}
-      TRUST_EDGE_SSH_HOST: ${{ secrets.TRUST_EDGE_SSH_HOST }}
-      TRUST_EDGE_SSH_USERNAME: ${{ secrets.TRUST_EDGE_SSH_USERNAME }}
-      TRUST_EDGE_SSH_PRIVATE_KEY: ${{ secrets.TRUST_EDGE_SSH_PRIVATE_KEY }}
-      TRUST_EDGE_SSH_KNOWN_HOSTS: ${{ secrets.TRUST_EDGE_SSH_KNOWN_HOSTS }}
       TRUST_EDGE_SSH_PORT: ${{ vars.TRUST_EDGE_SSH_PORT }}
       TRUST_EDGE_SSH_REMOTE_ROOT: ${{ vars.TRUST_EDGE_SSH_REMOTE_ROOT }}
       TRUST_EDGE_SOURCE_DIR: ${{ vars.TRUST_EDGE_SOURCE_DIR }}
@@ -63,9 +56,18 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
+          persist-credentials: false
           ref: ${{ inputs.release_sha }}
 
       - name: Validate deploy configuration
+        env:
+          TRUST_EDGE_FTP_SERVER: ${{ secrets.TRUST_EDGE_FTP_SERVER }}
+          TRUST_EDGE_FTP_USERNAME: ${{ secrets.TRUST_EDGE_FTP_USERNAME }}
+          TRUST_EDGE_FTP_PASSWORD: ${{ secrets.TRUST_EDGE_FTP_PASSWORD }}
+          TRUST_EDGE_SSH_HOST: ${{ secrets.TRUST_EDGE_SSH_HOST }}
+          TRUST_EDGE_SSH_USERNAME: ${{ secrets.TRUST_EDGE_SSH_USERNAME }}
+          TRUST_EDGE_SSH_PRIVATE_KEY: ${{ secrets.TRUST_EDGE_SSH_PRIVATE_KEY }}
+          TRUST_EDGE_SSH_KNOWN_HOSTS: ${{ secrets.TRUST_EDGE_SSH_KNOWN_HOSTS }}
         run: |
           case "$TRANSPORT" in
             sftp)
@@ -90,10 +92,19 @@ jobs:
 
       - name: Upload deploy payload over SFTP
         if: ${{ inputs.transport == 'sftp' }}
+        env:
+          TRUST_EDGE_SSH_HOST: ${{ secrets.TRUST_EDGE_SSH_HOST }}
+          TRUST_EDGE_SSH_USERNAME: ${{ secrets.TRUST_EDGE_SSH_USERNAME }}
+          TRUST_EDGE_SSH_PRIVATE_KEY: ${{ secrets.TRUST_EDGE_SSH_PRIVATE_KEY }}
+          TRUST_EDGE_SSH_KNOWN_HOSTS: ${{ secrets.TRUST_EDGE_SSH_KNOWN_HOSTS }}
         run: scripts/upload-trust-edge-sftp.sh .trust-edge-deploy
 
       - name: Upload deploy payload over FTPS
         if: ${{ inputs.transport == 'ftps' }}
+        env:
+          TRUST_EDGE_FTP_SERVER: ${{ secrets.TRUST_EDGE_FTP_SERVER }}
+          TRUST_EDGE_FTP_USERNAME: ${{ secrets.TRUST_EDGE_FTP_USERNAME }}
+          TRUST_EDGE_FTP_PASSWORD: ${{ secrets.TRUST_EDGE_FTP_PASSWORD }}
         run: |
           payload=".trust-edge-deploy"
           root="${TRUST_EDGE_REMOTE_ROOT#/}"
